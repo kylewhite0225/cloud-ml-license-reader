@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PlateUploader": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
