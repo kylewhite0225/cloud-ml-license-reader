@@ -14,13 +14,6 @@ public class PlateUploader
 {
     static void Main(string[] args)
     {
-        // NO LONGER NEEDED
-        // Check if the input arguments array contains the proper number of arguments
-        // if (args.Length != 2)
-        // {
-        //     throw new ArgumentException("Required arguments: file-path data-type");
-        // }
-
         // Capture path from args array
         string path = @args[0];
 
@@ -32,19 +25,14 @@ public class PlateUploader
             throw new FileNotFoundException("File does not exist.");
         }
 
-
-        // NO LONGER NEEDED
-        // Capture file type from args array
-        // string type = args[1];
-
         // Split the path on '.' to get the filetype extension.
         string[] type = path.Split('.');
 
-        // Check if it matches the two accepted filetype (xml).
-        if (!String.Equals(type[1], "xml"))
+        // Check if it matches the accepted filetype (.jpg).
+        if (!String.Equals(type[1], "jpg"))
         {
             // Throw an exception if it does not match.
-            throw new ArgumentException("File type must be xml.");
+            throw new ArgumentException("File type must be a jpg image.");
         }
         
         // If the arguments pass checks, use UploadFile method
