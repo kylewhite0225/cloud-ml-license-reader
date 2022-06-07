@@ -3,6 +3,14 @@ using Amazon.Lambda.S3Events;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
+using Amazon.SQS;
+using Amazon.Rekognition;
+using Amazon.Rekognition.Model;
+using Amazon.Runtime.Internal;
+using S3Object = Amazon.Rekognition.Model.S3Object;
+using System.Collections.Generic;
+using System.Net.Mime;
+using System.Text.Json;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -50,21 +58,67 @@ public class Function
         string bucketName = s3Event.Bucket.Name;
         string objectKey = s3Event.Object.Key;
 
-        Console.WriteLine("Bucket and object key: {0}, {1}", bucketName, objectKey);
+        AmazonRekognitionClient rekognition = new AmazonRekognitionClient();
 
-        string[] keyArray = objectKey.Split('.');
-        string strType = keyArray[1];
+        Console.WriteLine("Bucket and object key: {0}, {1}", bucketName, objectKey);
 
         try
         {
-            GetObjectRequest request = new GetObjectRequest()
+          
+            S3Object image = new S3Object()
             {
-                BucketName = bucketName,
-                Key = objectKey
+                Bucket = bucketName,
+                Name = objectKey
             };
 
+            Image i = new Image()
+            {
+                S3Object = image
+            };
 
-            Video v = new Video()
+            DetectTextRequest request = new DetectTextRequest()
+            {
+                Image = i
+            };
+
+            string[] detectedText = Array.Empty<string>();
+
+            // Detect text in image, write to console for debugging.
+            DetectTextResponse response = await rekognition.DetectTextAsync(request);
+            Console.WriteLine("Detected text: ");
+
+            bool cali = false;
+            
+            foreach (TextDetection str in response.TextDetections)
+            {
+                if (str.DetectedText == "California")
+                {
+                    cali = true;
+                }
+
+                detectedText.Append(str.DetectedText);
+                Console.WriteLine(str.DetectedText);
+            }
+
+            if (!cali)
+            {
+                // TODO
+                // PUT PLATE IMAGE IN MANUAL BUCKET
+
+                // I think this leaves the Lambda?
+                var resp = await this.S3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key);
+                return resp.Headers.ContentType;
+            }
+
+            Ticket ticket = CreateTicket(detectedText);
+
+            Console.WriteLine("Creating JSON from Ticket object");
+
+            var jsonMessage = JsonSerializer.Serialize<Ticket>(ticket);
+
+            var sqsClient = new AmazonSQSClient();
+            sqsClient.SendMessageAsync(
+                "queue url", jsonMessage).Wait();
         }
         catch (Exception e)
         {
@@ -86,5 +140,48 @@ public class Function
             context.Logger.LogInformation(e.StackTrace);
             throw;
         }
+    }
+
+    private static Ticket CreateTicket(string[] detectedText)
+    {
+        var violationType = new Dictionary<string, int>()
+        {
+            {"No stop.", 300},
+            {"No full stop on right.", 75},
+            {"No right on red.", 125}
+        };
+
+        string[] locations =
+        {
+            "Main St and 116th Ave intersection, Bellevue", 
+            "145th and Greenwood intersection, Shoreline", 
+            "45th and Stone Way intersection, Seattle"
+        };
+
+        Random rand = new Random();
+
+        int index = rand.Next(3);
+
+        var violation = violationType.ElementAt(index).Key;
+        var amount = violationType.ElementAt(index).Value;
+
+        index = rand.Next(3);
+
+        var location = locations[index];
+
+        string date = DateTime.Now.ToLocalTime().ToLongDateString();
+
+        // TODO 
+        // Figure out how to isolate the plate number itself
+        string plate = detectedText[0];
+
+        return new Ticket()
+        {
+            date = date,
+            location = location,
+            violation = violation,
+            amount = amount,
+            plate = plate
+        };
     }
 }

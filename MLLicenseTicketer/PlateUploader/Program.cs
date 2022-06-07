@@ -36,7 +36,7 @@ public class PlateUploader
         }
         
         // If the arguments pass checks, use UploadFile method
-        UploadFile(path, "plate-bucket").Wait();
+        UploadFile(path, "cc-plate-bucket").Wait();
         Console.WriteLine("Done.");
     }
 

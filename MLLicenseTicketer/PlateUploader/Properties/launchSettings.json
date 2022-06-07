@@ -2,7 +2,7 @@
   "profiles": {
     "PlateUploader": {
       "commandName": "Project",
-      "commandLineArgs": ""
+      "commandLineArgs": "\"C:\\Users\\Kylew\\Dropbox\\CS455 - Cloud Computing\\Projects\\Project 3\\cloud-ml-license-reader\\LicencePlates\\cal_plate2_spanish.jpg\""
     }
   }
 }
