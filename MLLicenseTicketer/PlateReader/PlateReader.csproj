@@ -14,8 +14,8 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="2.0.1" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.8.18" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.9.3" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.2.65" />
+    <PackageReference Include="AWSSDK.Textract" Version="3.7.5.19" />
   </ItemGroup>
 </Project>

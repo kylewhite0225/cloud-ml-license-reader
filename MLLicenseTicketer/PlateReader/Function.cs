@@ -4,13 +4,18 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Amazon.SQS;
-using Amazon.Rekognition;
-using Amazon.Rekognition.Model;
+using Amazon.SQS.Model;
+// using Amazon.Rekognition;
+// using Amazon.Rekognition.Model;
+using Amazon.Textract;
+using Amazon.Textract.Model;
 using Amazon.Runtime.Internal;
-using S3Object = Amazon.Rekognition.Model.S3Object;
+using S3Object = Amazon.Textract.Model.S3Object;
 using System.Collections.Generic;
 using System.Net.Mime;
 using System.Text.Json;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -58,70 +63,93 @@ public class Function
         string bucketName = s3Event.Bucket.Name;
         string objectKey = s3Event.Object.Key;
 
-        AmazonRekognitionClient rekognition = new AmazonRekognitionClient();
+        // AmazonRekognitionClient rekognition = new AmazonRekognitionClient();
+        AmazonTextractClient textract = new AmazonTextractClient();
 
         Console.WriteLine("Bucket and object key: {0}, {1}", bucketName, objectKey);
 
         try
         {
-          
-            S3Object image = new S3Object()
+            S3Object image = new Amazon.Textract.Model.S3Object()
             {
                 Bucket = bucketName,
                 Name = objectKey
             };
 
-            Image i = new Image()
+
+            Document doc = new Document()
             {
                 S3Object = image
             };
 
-            DetectTextRequest request = new DetectTextRequest()
+            DetectDocumentTextRequest request = new DetectDocumentTextRequest()
             {
-                Image = i
+                Document = doc
             };
 
-            string[] detectedText = Array.Empty<string>();
-
-            // Detect text in image, write to console for debugging.
-            DetectTextResponse response = await rekognition.DetectTextAsync(request);
             Console.WriteLine("Detected text: ");
 
+            DetectDocumentTextResponse response = await textract.DetectDocumentTextAsync(request);
+
+            List<string> detectedText = new List<string>();
+            string plateNumber = "";
+
             bool cali = false;
-            
-            foreach (TextDetection str in response.TextDetections)
+            bool plate = false;
+
+            foreach (Block b in response.Blocks)
             {
-                if (str.DetectedText == "California")
+                if (b.Text == null)
+                {
+                    continue;
+                }
+
+                if (b.Text == "California")
                 {
                     cali = true;
                 }
 
-                detectedText.Append(str.DetectedText);
-                Console.WriteLine(str.DetectedText);
+                plate = PlateDetector(b.Text);
+
+                if (plate)
+                {
+                    plateNumber = b.Text;
+                }
+
+                if (cali && PlateDetector(plateNumber))
+                {
+                    break;
+                }
+
+                // detectedText.Add(b.Text);
+                Console.WriteLine(b.Text);
             }
 
             if (!cali)
             {
-                // TODO
-                // PUT PLATE IMAGE IN MANUAL BUCKET
+                // Put plate image into manual sorting bucket.
+                MoveFile(bucketName, objectKey, "manual-plate-bucket", objectKey).Wait();
 
                 // I think this leaves the Lambda?
                 return "Exiting lambda.";
+            } else if (!PlateDetector(plateNumber))
+            {
+                throw new Exception("Valid plate number not found.");
             }
 
-            Ticket ticket = CreateTicket(detectedText);
+            Ticket ticket = CreateTicket(plateNumber);
 
             Console.WriteLine("Creating JSON from Ticket object");
 
             var jsonMessage = JsonSerializer.Serialize<Ticket>(ticket);
 
-            var sqsClient = new AmazonSQSClient();
-            sqsClient.SendMessageAsync(
-                "queue url", jsonMessage).Wait();
+            // var sqsClient = new AmazonSQSClient();
+            // sqsClient.SendMessageAsync(
+            //     "queue url", jsonMessage).Wait();
         }
         catch (Exception e)
         {
-            context.Logger.LogInformation($"Error getting object {s3Event.Object.Key} from bucket {s3Event.Bucket.Name}. Make sure they exist and your bucket is in the same region as this function.");
+            // context.Logger.LogInformation($"Error getting object {s3Event.Object.Key} from bucket {s3Event.Bucket.Name}. Make sure they exist and your bucket is in the same region as this function.");
             context.Logger.LogInformation(e.Message);
             context.Logger.LogInformation(e.StackTrace);
             throw;
@@ -141,7 +169,7 @@ public class Function
         }
     }
 
-    private static Ticket CreateTicket(string[] detectedText)
+    private static Ticket CreateTicket(string plate)
     {
         var violationType = new Dictionary<string, int>()
         {
@@ -159,28 +187,80 @@ public class Function
 
         Random rand = new Random();
 
-        int index = rand.Next(3);
+        int index = rand.Next(2);
 
         var violation = violationType.ElementAt(index).Key;
         var amount = violationType.ElementAt(index).Value;
 
-        index = rand.Next(3);
+        index = rand.Next(2);
 
         var location = locations[index];
 
-        string date = DateTime.Now.ToLocalTime().ToLongDateString();
+        string date = DateTime.Now.ToLongDateString();
+        string time = DateTime.Now.ToLocalTime().ToString("h:mm:ss tt");
 
         // TODO 
         // Figure out how to isolate the plate number itself
-        string plate = detectedText[0];
+        // string plate = detectedText[0];
 
         return new Ticket()
         {
-            date = date,
+            date = date + " at " + time,
             location = location,
             violation = violation,
             amount = amount,
             plate = plate
         };
+    }
+
+    private static bool PlateDetector(string plate)
+    {
+        if (plate == null)
+        {
+            return false;
+        }
+        
+        if (plate.Length == 7 && Regex.IsMatch(plate, "^(?=.*[0-9])(?=.*[a-zA-Z])([a-zA-Z0-9]+)$"))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static async Task MoveFile(string source, string sourceKey, string destination, string destKey)
+    {
+        AmazonS3Client s3Client = new AmazonS3Client();
+
+        try
+        {
+            CopyObjectRequest copy = new CopyObjectRequest()
+            {
+                SourceBucket = source,
+                SourceKey = sourceKey,
+                DestinationBucket = destination,
+                DestinationKey = destKey
+            };
+
+            CopyObjectResponse response = await s3Client.CopyObjectAsync(copy);
+            Console.WriteLine("File copy completed.");
+
+            s3Client.Dispose();
+            // return Task.CompletedTask;
+        }
+        catch (AmazonS3Exception e)
+        {
+            if (e.ErrorCode != null &&
+                (e.ErrorCode.Equals("InvalidAccessKeyId")
+                 ||
+                 e.ErrorCode.Equals("InvalidSecurity")))
+            {
+                throw new Exception("Check the provided AWS Credentials.");
+            }
+            else
+            {
+                throw new Exception("Error occurred: " + e.Message);
+            }
+        }
     }
 }
