@@ -106,8 +106,7 @@ public class Function
                 // PUT PLATE IMAGE IN MANUAL BUCKET
 
                 // I think this leaves the Lambda?
-                var resp = await this.S3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key);
-                return resp.Headers.ContentType;
+                return "Exiting lambda.";
             }
 
             Ticket ticket = CreateTicket(detectedText);
