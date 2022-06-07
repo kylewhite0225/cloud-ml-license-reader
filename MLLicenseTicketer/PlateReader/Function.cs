@@ -5,8 +5,6 @@ using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-// using Amazon.Rekognition;
-// using Amazon.Rekognition.Model;
 using Amazon.Textract;
 using Amazon.Textract.Model;
 using Amazon.Runtime.Internal;
@@ -137,7 +135,11 @@ public class Function
                 throw new Exception("Valid plate number not found.");
             }
 
-            Ticket ticket = CreateTicket(plateNumber);
+            var metadataRequest = await this.S3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key);
+
+            MetadataCollection metadata = metadataRequest.Metadata;
+
+            Ticket ticket = CreateTicket(plateNumber, metadata);
 
             Console.WriteLine("Creating JSON from Ticket object");
 
@@ -169,45 +171,22 @@ public class Function
         }
     }
 
-    private static Ticket CreateTicket(string plate)
+    private static Ticket CreateTicket(string plate, MetadataCollection metadata)
     {
-        var violationType = new Dictionary<string, int>()
+        var violationAmount = new Dictionary<string, int>()
         {
             {"No stop.", 300},
             {"No full stop on right.", 75},
             {"No right on red.", 125}
         };
 
-        string[] locations =
-        {
-            "Main St and 116th Ave intersection, Bellevue", 
-            "145th and Greenwood intersection, Shoreline", 
-            "45th and Stone Way intersection, Seattle"
-        };
-
-        Random rand = new Random();
-
-        int index = rand.Next(2);
-
-        var violation = violationType.ElementAt(index).Key;
-        var amount = violationType.ElementAt(index).Value;
-
-        index = rand.Next(2);
-
-        var location = locations[index];
-
-        string date = DateTime.Now.ToLongDateString();
-        string time = DateTime.Now.ToLocalTime().ToString("h:mm:ss tt");
-
-        // TODO 
-        // Figure out how to isolate the plate number itself
-        // string plate = detectedText[0];
+        var amount = violationAmount[metadata["violation"]];
 
         return new Ticket()
         {
-            date = date + " at " + time,
-            location = location,
-            violation = violation,
+            date = metadata["date"],
+            location = metadata["location"],
+            violation = metadata["violation"],
             amount = amount,
             plate = plate
         };

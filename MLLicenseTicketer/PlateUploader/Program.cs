@@ -72,6 +72,8 @@ public class PlateUploader
 
         AmazonS3Client s3Client = new AmazonS3Client(credentials, RegionEndpoint.USEast1);
 
+        List<string> ticket = TicketRandomizer();
+
         try
         {
             PutObjectRequest putRequest = new PutObjectRequest
@@ -80,11 +82,14 @@ public class PlateUploader
                 FilePath = filePath,
             };
 
+            putRequest.Metadata.Add("Location", ticket[0]);
+            putRequest.Metadata.Add("Date", ticket[1]);
+            putRequest.Metadata.Add("Violation", ticket[2]);
+
             PutObjectResponse response = await s3Client.PutObjectAsync(putRequest);
             Console.WriteLine("File uploading completed.");
 
             s3Client.Dispose();
-            // return Task.CompletedTask;
         }
         catch (AmazonS3Exception e)
         {
@@ -100,5 +105,44 @@ public class PlateUploader
                 throw new Exception("Error occurred: " + e.Message);
             }
         }
+    }
+
+    private static List<string> TicketRandomizer()
+    {
+        var violationType = new List<string>()
+        {
+            {"No stop."},
+            {"No full stop on right."},
+            {"No right on red."}
+        };
+
+        var locations = new List<string>()
+        {
+            "Main St and 116th Ave intersection, Bellevue",
+            "145th and Greenwood intersection, Shoreline",
+            "45th and Stone Way intersection, Seattle"
+        };
+
+        Random rand = new Random();
+
+        int index = rand.Next(2);
+
+        var violation = violationType[index];
+
+        index = rand.Next(2);
+
+        var location = locations[index];
+
+        string date = DateTime.Now.ToLongDateString();
+        string time = DateTime.Now.ToLocalTime().ToString("h:mm:ss tt");
+
+        string dateTime = date + " " + time;
+
+        return new List<string>()
+        {
+            {location},
+            {dateTime},
+            {violation}
+        };
     }
 }
