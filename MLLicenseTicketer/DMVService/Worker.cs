@@ -7,6 +7,7 @@ using System.IO;
 using Amazon.SQS;
 using System.Text.Json;
 using System.Xml.Linq;
+using System.Xml.XPath;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.Runtime;
 using Amazon.SQS.Model;
@@ -87,12 +88,35 @@ namespace DMVService
                             // var providerElement = policyElement.Descendants().FirstOrDefault();
                             // insurance.provider = providerElement.Value;
 
-                            var makeElement = element.Descendants().Where(x => x.Name.ToString() == "make").FirstOrDefault();
-                            vehicle.make == makeElement.Value;
+                            // var makeElement = element.Descendants().Where(x => x.Name.ToString() == "make").FirstOrDefault();
+                            // vehicle.make == makeElement.Value;
 
+                            var make = element.XPathSelectElement("./make").Value;
+                            vehicle.make = make;
+
+                            var model = element.XPathSelectElement("./model").Value;
+                            vehicle.model = model;
+
+                            var color = element.XPathSelectElement("./color").Value;
+                            vehicle.color = color;
+
+                            var ownerElement = element.XPathSelectElement("./owner");
+                            var preferredLanguage = ownerElement.Attribute("preferredLanguage").Value;
+                            vehicle.preferredLanguage = preferredLanguage;
+
+                            var name = ownerElement.XPathSelectElement("./name").Value;
+                            vehicle.name = name;
+
+                            var contact = ownerElement.XPathSelectElement("./contact").Value;
+                            vehicle.contact = contact;
                         }
 
                         // Populate ticket specific information in vehicle object
+
+                        vehicle.violationType = ticket.violation;
+                        vehicle.violationLocation = ticket.location;
+                        vehicle.date = ticket.date;
+                        vehicle.ticketAmount = ticket.amount;
 
                         WriteToLog("Deleting message from queue...");
                         await sqsClient.DeleteMessageAsync("https://sqs.us-east-1.amazonaws.com/758232842797/downward-queue", message.ReceiptHandle);

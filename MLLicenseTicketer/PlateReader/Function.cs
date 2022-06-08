@@ -147,7 +147,7 @@ public class Function
 
             var sqsClient = new AmazonSQSClient();
             sqsClient.SendMessageAsync(
-                "https://sqs.us-east-1.amazonaws.com/926831757693/downwardQueue", 
+                "https://sqs.us-east-1.amazonaws.com/758232842797/downward-queue", 
                 jsonMessage).Wait();
         }
         catch (Exception e)
