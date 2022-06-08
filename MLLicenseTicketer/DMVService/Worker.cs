@@ -39,7 +39,7 @@ namespace DMVService
             await base.StopAsync(cancellationToken);
         }
 
-        protected override async Task<bool> ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -124,9 +124,10 @@ namespace DMVService
                         // Send vehicle info to upward queue
                         WriteToLog("Sending message to queue...");
                         string jsonMessage = JsonSerializer.Serialize<Vehicle>(vehicle);
-                        await sqsClient.SendMessageAsync(
-                            "https://sqs.us-east-1.amazonaws.com/926831757693/upwardQueue",
-                            jsonMessage);
+                        // await sqsClient.SendMessageAsync(
+                        //     "https://sqs.us-east-1.amazonaws.com/926831757693/upwardQueue",
+                        //     jsonMessage);
+                        WriteToLog(jsonMessage);
                         WriteToLog("Successfully sent message.");
                     }
                 }
