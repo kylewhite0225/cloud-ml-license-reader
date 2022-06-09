@@ -142,7 +142,8 @@ public class Function
         MailMessage message = new MailMessage();
         message.From = new MailAddress("jessicaramoscortes@gmail.com");
         message.To.Add(new MailAddress(toAddress));
-        message.Subject = "You just got served");
+        message.Subject = "You just got served";
+        // ^^^ lol
         message.Body = emailBody;
 
         SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587);

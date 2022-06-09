@@ -48,7 +48,7 @@ namespace DMVService
                 try
                 {
                     sqsClient = new AmazonSQSClient(GetAwsCredentials(), Amazon.RegionEndpoint.USEast1);
-                
+
                     WriteToLog("Receiving SQS Message from downward queue...");
                     var response = await sqsClient.ReceiveMessageAsync(
                         "https://sqs.us-east-1.amazonaws.com/758232842797/downward-queue"
@@ -80,17 +80,7 @@ namespace DMVService
                         {
                             WriteToLog("Found vehicle in database. Accessing owner information.");
 
-                            // Found plate number, populate vehicle related fields
-
-                            // var policyElement = element.Descendants().Where(x => x.Attribute("policyNumber") != null).FirstOrDefault();
-                            // insurance.policy = policyElement.Attribute("policyNumber").Value;
-                            //
-                            // var providerElement = policyElement.Descendants().FirstOrDefault();
-                            // insurance.provider = providerElement.Value;
-
-                            // var makeElement = element.Descendants().Where(x => x.Name.ToString() == "make").FirstOrDefault();
-                            // vehicle.make == makeElement.Value;
-
+                            // Found plate number, populate vehicle related fields using XPath
                             var make = element.XPathSelectElement("./make").Value;
                             vehicle.make = make;
 
@@ -112,7 +102,6 @@ namespace DMVService
                         }
 
                         // Populate ticket specific information in vehicle object
-
                         vehicle.violationType = ticket.violation;
                         vehicle.violationLocation = ticket.location;
                         vehicle.date = ticket.date;
@@ -155,9 +144,9 @@ namespace DMVService
             return new SessionAWSCredentials(
                 // TODO
                 // Update session credentials
-                "ASIA5PS32JF66C5FU5PG",
-                "M2pi4ntusI6/VeQDPba4eYs48dfz0ibhKWfyTdn6",
-                "FwoGZXIvYXdzEMf//////////wEaDCCmAyJY6tFETOLeiiLFAUqcnggUUwfYkD14FNqywQOQ1VRupNrFD8jiwcGcs5gpHlcVfpZra+mhtN15L3WJ2LJpAJ2jheQO2e2CoyFuPfd8c/T8+f/eoNJyDfcWadY285mtcQ+EdIVpTT11swGdtKlK2cxlZhig17dGaE8arogQSP8Df9EDXUbxzEk/1SHq7hSWThv00aWwgS2OI/QCqG/M0PQsYXdsbXJL6C7JHTPvK91dsOMW51QonuGjn2P4Qpybg/VJ9XE9X316qOscVDMEvNBCKM+nvJQGMi2dqO2iuT/rWHWZmdFtcdM5MS4x7GqmIxO44WPspB2z5UWuMDNHytz21NnLIbw=");
+                "xxx",
+                "xxx",
+                "xxx");
         }
     }
 }
