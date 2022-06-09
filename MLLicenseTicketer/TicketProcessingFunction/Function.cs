@@ -165,14 +165,23 @@ public class Function
 
     private string ConstructEmailBody(TrafficViolation violation)
     {
-        string explanation = "Your vehicle was involved in a traffic violation. Please pay the specified ticket amount by 30 days: ";
+        string? explanation = "Your vehicle was involved in a traffic violation. Please pay the specified ticket amount by 30 days: ";
 
         if (languageCodes[violation.PreferredLanguage] != "en")
         {
             var translate = new AmazonTranslateClient(sessionCredentials, RegionEndpoint.USEast1);
             var request = new TranslateTextRequest() { Text = explanation, SourceLanguageCode = "en", TargetLanguageCode = languageCodes[violation.PreferredLanguage] };
-            var translateResponse = translate.TranslateTextAsync(request).Result;
-            explanation = translateResponse.TranslatedText;
+            TranslateTextResponse? translateResponse = null;
+            try
+            {
+                translateResponse = translate.TranslateTextAsync(request).Result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to translate text via AWS");
+                Console.WriteLine(e.Message);
+            }
+            explanation = translateResponse?.TranslatedText;
         }
 
         string result = explanation + "\n\n";
