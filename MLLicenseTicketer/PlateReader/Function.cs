@@ -145,9 +145,10 @@ public class Function
 
             var jsonMessage = JsonSerializer.Serialize<Ticket>(ticket);
 
-            // var sqsClient = new AmazonSQSClient();
-            // sqsClient.SendMessageAsync(
-            //     "queue url", jsonMessage).Wait();
+            var sqsClient = new AmazonSQSClient();
+            sqsClient.SendMessageAsync(
+                "https://sqs.us-east-1.amazonaws.com/758232842797/downward-queue", 
+                jsonMessage).Wait();
         }
         catch (Exception e)
         {
