@@ -176,12 +176,12 @@ public class Function
         }
 
         string result = explanation + "\n\n";
-        result += $"Vehicle: {violation.Vehicle}\n";
-        result += $"License plate: {violation.LicensePlate}\n";
+        result += $"Vehicle: {violation.Color} {violation.Make} {violation.Model}\n";
+        result += $"License plate: {violation.Plate}\n";
         result += $"Date: {violation.Date}\n";
-        result += $"Violation address: {violation.Address}\n";
+        result += $"Violation address: {violation.ViolationLocation}\n";
         result += $"Violation type: {violation.ViolationType}\n";
-        result += $"Ticket amount: {violation.ViolationAmount}\n";
+        result += $"Ticket amount: {violation.TicketAmount}\n";
 
         return result;
     }
