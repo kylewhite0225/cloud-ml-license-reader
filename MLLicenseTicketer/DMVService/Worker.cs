@@ -113,9 +113,9 @@ namespace DMVService
                         // Send vehicle info to upward queue
                         WriteToLog("Sending message to queue...");
                         string jsonMessage = JsonSerializer.Serialize<Vehicle>(vehicle);
-                        // await sqsClient.SendMessageAsync(
-                        //     "https://sqs.us-east-1.amazonaws.com/926831757693/upwardQueue",
-                        //     jsonMessage);
+                        await sqsClient.SendMessageAsync(
+                            "https://sqs.us-east-1.amazonaws.com/926831757693/upwardQueue",
+                            jsonMessage);
                         WriteToLog(jsonMessage);
                         WriteToLog("Successfully sent message.");
                     }
@@ -144,9 +144,9 @@ namespace DMVService
             return new SessionAWSCredentials(
                 // TODO
                 // Update session credentials
-                "xxx",
-                "xxx",
-                "xxx");
+                "",
+                "",
+                "");
         }
     }
 }
