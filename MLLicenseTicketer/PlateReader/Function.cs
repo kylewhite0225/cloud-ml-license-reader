@@ -61,7 +61,6 @@ public class Function
         string bucketName = s3Event.Bucket.Name;
         string objectKey = s3Event.Object.Key;
 
-        // AmazonRekognitionClient rekognition = new AmazonRekognitionClient();
         AmazonTextractClient textract = new AmazonTextractClient();
 
         Console.WriteLine("Bucket and object key: {0}, {1}", bucketName, objectKey);
@@ -89,7 +88,6 @@ public class Function
 
             DetectDocumentTextResponse response = await textract.DetectDocumentTextAsync(request);
 
-            List<string> detectedText = new List<string>();
             string plateNumber = "";
 
             bool cali = false;
@@ -119,13 +117,13 @@ public class Function
                     break;
                 }
 
-                // detectedText.Add(b.Text);
                 Console.WriteLine(b.Text);
             }
 
             if (!cali)
             {
                 // Put plate image into manual sorting bucket.
+                Console.WriteLine("License is not a California plate.");
                 MoveFile(bucketName, objectKey, "manual-plate-bucket", objectKey).Wait();
 
                 // I think this leaves the Lambda?
@@ -226,7 +224,6 @@ public class Function
             Console.WriteLine("File copy completed.");
 
             s3Client.Dispose();
-            // return Task.CompletedTask;
         }
         catch (AmazonS3Exception e)
         {
