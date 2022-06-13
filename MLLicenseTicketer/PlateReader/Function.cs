@@ -147,6 +147,7 @@ public class Function
             sqsClient.SendMessageAsync(
                 "https://sqs.us-east-1.amazonaws.com/758232842797/downward-queue", 
                 jsonMessage).Wait();
+            Console.WriteLine("Message sent to downward queue!");
         }
         catch (Exception e)
         {
